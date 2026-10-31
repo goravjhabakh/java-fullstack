@@ -1,7 +1,5 @@
 package com.example.backend.task;
 
-import java.util.List;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,12 +23,23 @@ public class TaskController {
   }
 
   @GetMapping
-  public List<TaskResponse> getAllTasks(
+  public TaskPageResponse getAllTasks(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "20") int size,
       @RequestParam(required = false) Boolean completed,
+      @RequestParam(required = false) Long projectId,
+      @RequestParam(required = false) String title,
       @RequestParam(defaultValue = "id") String sortBy,
       @RequestParam(defaultValue = "asc") String direction) {
 
-    return taskService.getAllTasks(completed, sortBy, direction);
+    return taskService.getAllTasks(
+        page,
+        size,
+        completed,
+        projectId,
+        title,
+        sortBy,
+        direction);
   }
 
   @GetMapping("/{id}")

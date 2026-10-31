@@ -1,7 +1,8 @@
 package com.example.backend.task;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,37 @@ public class TaskService {
   }
 
   @Transactional(readOnly = true)
-  public List<TaskResponse> getAllTasks(Boolean completed, String sortBy, String direction) {
+  public TaskPageResponse getAllTasks(
+      int page,
+      int size,
+      Boolean completed,
+      Long projectId,
+      String title,
+      String sortBy,
+      String direction) {
+
+    if (page < 0) {
+      throw new IllegalArgumentException("Page must be 0 or greater");
+    }
+
+    if (size < 1 || size > 100) {
+      throw new IllegalArgumentException("Size must be between 1 and 100");
+    }
+
+    if (projectId != null && projectId < 1) {
+      throw new IllegalArgumentException("Project ID must be 1 or greater");
+    }
+
+    String normalizedTitle = null;
+
+    if (title != null) {
+      String trimmedTitle = title.trim();
+
+      if (!trimmedTitle.isEmpty()) {
+        normalizedTitle = trimmedTitle;
+      }
+    }
+
     String sortField = switch (sortBy) {
       case "id", "title", "completed" -> sortBy;
       default -> throw new IllegalArgumentException("Invalid sortBy value");
@@ -43,11 +74,69 @@ public class TaskService {
 
     Sort sort = Sort.by(sortDirection, sortField);
 
-    List<Task> tasks = completed == null
-        ? taskRepository.findAll(sort)
-        : taskRepository.findByCompleted(completed, sort);
+    if (!sortField.equals("id")) {
+      sort = sort.and(Sort.by(Sort.Direction.ASC, Task::getId));
+    }
 
-    return tasks.stream().map(TaskResponse::from).toList();
+    Pageable pageable = PageRequest.of(page, size, sort);
+    Page<Task> taskPage;
+
+    if (completed != null && projectId != null && normalizedTitle != null) {
+      taskPage = taskRepository
+          .findByCompletedAndProject_IdAndTitleContainingIgnoreCase(
+              completed,
+              projectId,
+              normalizedTitle,
+              pageable);
+
+    } else if (completed != null && projectId != null) {
+      taskPage = taskRepository.findByCompletedAndProject_Id(
+          completed,
+          projectId,
+          pageable);
+
+    } else if (completed != null && normalizedTitle != null) {
+      taskPage = taskRepository.findByCompletedAndTitleContainingIgnoreCase(
+          completed,
+          normalizedTitle,
+          pageable);
+
+    } else if (projectId != null && normalizedTitle != null) {
+      taskPage = taskRepository.findByProject_IdAndTitleContainingIgnoreCase(
+          projectId,
+          normalizedTitle,
+          pageable);
+
+    } else if (completed != null) {
+      taskPage = taskRepository.findByCompleted(
+          completed,
+          pageable);
+
+    } else if (projectId != null) {
+      taskPage = taskRepository.findByProject_Id(
+          projectId,
+          pageable);
+
+    } else if (normalizedTitle != null) {
+      taskPage = taskRepository.findByTitleContainingIgnoreCase(
+          normalizedTitle,
+          pageable);
+
+    } else {
+      taskPage = taskRepository.findAll(pageable);
+    }
+
+    Page<TaskResponse> responsePage = taskPage.map(TaskResponse::from);
+
+    return new TaskPageResponse(
+        responsePage.getContent(),
+        responsePage.getNumber(),
+        responsePage.getSize(),
+        responsePage.getNumberOfElements(),
+        responsePage.getTotalElements(),
+        responsePage.getTotalPages(),
+        responsePage.isFirst(),
+        responsePage.isLast());
   }
 
   @Transactional(readOnly = true)
