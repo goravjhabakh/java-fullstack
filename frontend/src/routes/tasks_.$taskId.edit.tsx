@@ -15,11 +15,35 @@ function EditTaskPage() {
   const queryClient = useQueryClient()
 
   const numericTaskId = Number(taskId)
+  const isValidTaskId = Number.isSafeInteger(numericTaskId) && numericTaskId > 0
 
   const taskQuery = useQuery({
     queryKey: ["tasks", "detail", numericTaskId],
     queryFn: () => getTask(numericTaskId),
+    enabled: isValidTaskId,
   })
+
+  if (!isValidTaskId) {
+    return (
+      <>
+        <h2>Invalid task ID</h2>
+        <Link
+          to="/tasks"
+          search={{
+            page: 0,
+            size: 20,
+            completed: undefined,
+            projectId: undefined,
+            title: undefined,
+            sortBy: "id",
+            direction: "asc",
+          }}
+        >
+          Back to tasks
+        </Link>
+      </>
+    )
+  }
 
   if (taskQuery.isPending) {
     return <p>Loading task...</p>

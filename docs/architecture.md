@@ -6,7 +6,7 @@ Do not design future infrastructure before it is required.
 
 ## Current architecture
 
-The application is a single Spring Boot backend that exposes HTTP/JSON Project and Task APIs and persists projects and tasks in PostgreSQL.
+The application consists of a React + TypeScript frontend and a Spring Boot backend. The frontend consumes the backend's HTTP/JSON Project and Task APIs; the backend persists projects and tasks in PostgreSQL.
 
 The API supports project creation and retrieval. Tasks are created under a project and support retrieval, partial updates, deletion, paginated listing, filtering by completion status and project, simple title search, and sorting by `id`, `title`, or `completed`.
 
@@ -14,7 +14,7 @@ Current request flow:
 
 ```mermaid
 flowchart LR
-    Client --> Controller
+    Client[React frontend] -->|HTTP/JSON| Controller
     Controller --> Service
     Service --> Repository
     Repository --> JPA[Spring Data JPA / Hibernate]
@@ -36,6 +36,16 @@ The current goal is learning Spring fundamentals, not distributed systems.
 The backend exposes HTTP/JSON project and task endpoints. Missing projects and tasks are identified in the service layer and translated to `404 Not Found` responses by centralized exception handling.
 
 Projects are created and read through `/projects`. Tasks are created through `POST /projects/{projectId}/tasks`. `GET /tasks` returns a paginated response and supports `page`, `size`, `completed`, `projectId`, `title`, `sortBy`, and `direction` query parameters. `GET`, `PATCH`, and `DELETE /tasks/{id}` use task IDs.
+
+### React frontend
+
+The frontend is a separate Vite application using React and TypeScript. TanStack Router handles client-side routing and task-list URL state. TanStack Query handles server state, including task/project requests, mutations, cache invalidation, loading, error, and retry behavior.
+
+The frontend supports task listing, filtering, pagination, creation, editing, and deletion through the existing REST API.
+
+### CORS
+
+Spring MVC centrally configures CORS for the local Vite frontend origin on the task and project API paths, allowing the frontend to make browser requests to the backend during development.
 
 ### PostgreSQL persistence
 

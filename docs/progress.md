@@ -2,11 +2,11 @@
 
 ## Current stage
 
-Phase 4 — Pagination and querying complete.
+Phase 5 — Full Stack complete.
 
 ## Active phase
 
-Spec 006 complete; ready to begin Spec 007.
+Spec 007 complete; ready to begin Spec 008.
 
 ## Completed
 
@@ -18,9 +18,15 @@ Spec 006 complete; ready to begin Spec 007.
 - Spec 004 — Task CRUD and Querying
 - Spec 005 — Project–Task Relationships
 - Spec 006 — Pagination and Querying
+- Spec 007 — React Frontend Integration
 - Task CRUD operations, 404 handling, completed-status filtering, and sorting
 - Project creation and retrieval, project-owned tasks, and PostgreSQL/JPA relationships
 - Paginated task listing with filtering, title search, and composable Spring Data JPA Specifications
+- React + TypeScript frontend built with Vite
+- TanStack Router routing and TanStack Query server-state management
+- Frontend integration with the Spring Boot REST API, including CORS configuration
+- Task list, create, edit, and delete flows with loading, error, and retry behavior
+- Browser verification of Spec 007 completed with Playwright
 - OpenCode global MCP setup available:
   - Firecrawl
   - gh_grep
@@ -28,11 +34,11 @@ Spec 006 complete; ready to begin Spec 007.
 
 ## Current focus
 
-Prepare Spec 007 for the next backend capability.
+Prepare Spec 008.
 
 ## Next
 
-Begin Spec 007 with the next useful backend capability.
+Begin Spec 008.
 
 ## Notes
 

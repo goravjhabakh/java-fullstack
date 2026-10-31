@@ -2,8 +2,9 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { getProjects } from "../api/projects"
+import { getApiError } from "../api/client"
 import { deleteTask, getTasks, type TaskListParameters } from "../api/tasks"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 export const Route = createFileRoute("/tasks/")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -54,6 +55,15 @@ function TasksPage() {
   const [sortBy, setSortBy] = useState(search.sortBy)
   const [direction, setDirection] = useState(search.direction)
 
+  useEffect(() => {
+    setTitle(search.title ?? "")
+    setCompleted(search.completed === undefined ? "" : String(search.completed))
+    setProjectId(search.projectId?.toString() ?? "")
+    setSize(String(search.size))
+    setSortBy(search.sortBy)
+    setDirection(search.direction)
+  }, [search])
+
   const parameters: TaskListParameters = {
     page: search.page,
     size: search.size,
@@ -90,9 +100,11 @@ function TasksPage() {
   }
 
   if (tasksQuery.isError || projectsQuery.isError) {
+    const error = getApiError(tasksQuery.error ?? projectsQuery.error)
+
     return (
       <>
-        <p>Failed to load data.</p>
+        <p>{error.message}</p>
 
         <button
           type="button"
@@ -111,29 +123,23 @@ function TasksPage() {
   const hasActiveFilters =
     search.completed !== undefined || search.projectId !== undefined || search.title !== undefined
 
-  if (tasksQuery.data.totalElements === 0) {
-    return (
-      <>
-        <h2>Tasks</h2>
-
-        {hasActiveFilters ? <p>No tasks match your filters.</p> : <p>No tasks exist yet.</p>}
-      </>
-    )
-  }
-
   return (
     <>
       <h2>Tasks</h2>
 
       {tasksQuery.isFetching && !tasksQuery.isPending && <p>Refreshing...</p>}
 
-      <p>
-        Page {tasksQuery.data.page + 1} of {tasksQuery.data.totalPages}
-        {" - "}
-        {tasksQuery.data.totalElements} matching tasks
-      </p>
+      {tasksQuery.data.totalElements > 0 && (
+        <>
+          <p>
+            Page {tasksQuery.data.page + 1} of {tasksQuery.data.totalPages}
+            {" - "}
+            {tasksQuery.data.totalElements} matching tasks
+          </p>
 
-      <p>Total tasks: {tasksQuery.data.totalElements}</p>
+          <p>Total tasks: {tasksQuery.data.totalElements}</p>
+        </>
+      )}
 
       <form
         onSubmit={(event) => {
@@ -229,8 +235,12 @@ function TasksPage() {
         <button type="submit">Apply filters</button>
       </form>
 
-      <ul>
-        {tasksQuery.data.content.map((task) => (
+      {tasksQuery.data.totalElements === 0 ? (
+        <p>{hasActiveFilters ? "No tasks match your filters." : "No tasks exist yet."}</p>
+      ) : (
+        <>
+          <ul>
+            {tasksQuery.data.content.map((task) => (
           <li key={task.id}>
             <strong>{task.title}</strong>
             {" — "}
@@ -256,42 +266,44 @@ function TasksPage() {
                 : "Delete"}
             </button>
           </li>
-        ))}
-      </ul>
+            ))}
+          </ul>
 
-      {deleteMutation.isError && <p>Failed to delete task.</p>}
+          {deleteMutation.isError && <p>Failed to delete task.</p>}
 
-      <div>
-        <button
-          type="button"
-          disabled={tasksQuery.data.first}
-          onClick={() =>
-            navigate({
-              search: (previous) => ({
-                ...previous,
-                page: previous.page - 1,
-              }),
-            })
-          }
-        >
-          Previous
-        </button>
+          <div>
+            <button
+              type="button"
+              disabled={tasksQuery.data.first}
+              onClick={() =>
+                navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    page: previous.page - 1,
+                  }),
+                })
+              }
+            >
+              Previous
+            </button>
 
-        <button
-          type="button"
-          disabled={tasksQuery.data.last}
-          onClick={() =>
-            navigate({
-              search: (previous) => ({
-                ...previous,
-                page: previous.page + 1,
-              }),
-            })
-          }
-        >
-          Next
-        </button>
-      </div>
+            <button
+              type="button"
+              disabled={tasksQuery.data.last}
+              onClick={() =>
+                navigate({
+                  search: (previous) => ({
+                    ...previous,
+                    page: previous.page + 1,
+                  }),
+                })
+              }
+            >
+              Next
+            </button>
+          </div>
+        </>
+      )}
     </>
   )
 }

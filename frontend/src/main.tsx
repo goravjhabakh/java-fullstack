@@ -4,8 +4,23 @@ import { RouterProvider, createRouter } from "@tanstack/react-router"
 
 import { routeTree } from "./routeTree.gen"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { getApiError } from "./api/client"
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        const { status } = getApiError(error)
+
+        if (status >= 400 && status < 500) {
+          return false
+        }
+
+        return failureCount < 3
+      },
+    },
+  },
+})
 
 const router = createRouter({
   routeTree,
