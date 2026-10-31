@@ -8,7 +8,7 @@ Do not design future infrastructure before it is required.
 
 The application is a single Spring Boot backend that exposes HTTP/JSON Project and Task APIs and persists projects and tasks in PostgreSQL.
 
-The API supports project creation and retrieval. Tasks are created under a project and continue to support retrieval, partial updates, deletion, optional filtering by completion status, and sorting by `id`, `title`, or `completed`.
+The API supports project creation and retrieval. Tasks are created under a project and support retrieval, partial updates, deletion, paginated listing, filtering by completion status and project, simple title search, and sorting by `id`, `title`, or `completed`.
 
 Current request flow:
 
@@ -35,7 +35,7 @@ The current goal is learning Spring fundamentals, not distributed systems.
 
 The backend exposes HTTP/JSON project and task endpoints. Missing projects and tasks are identified in the service layer and translated to `404 Not Found` responses by centralized exception handling.
 
-Projects are created and read through `/projects`. Tasks are created through `POST /projects/{projectId}/tasks`. `GET /tasks` supports optional `completed`, `sortBy`, and `direction` query parameters, while `GET`, `PATCH`, and `DELETE /tasks/{id}` use task IDs.
+Projects are created and read through `/projects`. Tasks are created through `POST /projects/{projectId}/tasks`. `GET /tasks` returns a paginated response and supports `page`, `size`, `completed`, `projectId`, `title`, `sortBy`, and `direction` query parameters. `GET`, `PATCH`, and `DELETE /tasks/{id}` use task IDs.
 
 ### PostgreSQL persistence
 
@@ -49,7 +49,7 @@ Projects, tasks, and their relationship must persist independently of the runnin
 
 Spring Data JPA provides project and task repository abstractions. Hibernate maps the `Project` and `Task` entities and their one-to-many/many-to-one relationship to PostgreSQL.
 
-The repositories use inherited persistence operations plus a derived completed-status task query. Task creation, updates, and deletes are coordinated by the service layer in transactions. API response DTOs expose project membership without directly serializing entity relationships.
+The repositories use inherited persistence operations and task listing uses Spring Data JPA Specifications for composable completion-status, project, and title filters. Task creation, updates, and deletes are coordinated by the service layer in transactions. API response DTOs expose project membership without directly serializing entity relationships.
 
 ### Flyway migrations
 

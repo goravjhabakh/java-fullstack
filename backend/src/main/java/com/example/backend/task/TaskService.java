@@ -4,6 +4,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,54 +79,12 @@ public class TaskService {
       sort = sort.and(Sort.by(Sort.Direction.ASC, Task::getId));
     }
 
+    Specification<Task> specification = TaskSpecifications.hasCompleted(completed)
+        .and(TaskSpecifications.hasProjectId(projectId))
+        .and(TaskSpecifications.titleContains(normalizedTitle));
+
     Pageable pageable = PageRequest.of(page, size, sort);
-    Page<Task> taskPage;
-
-    if (completed != null && projectId != null && normalizedTitle != null) {
-      taskPage = taskRepository
-          .findByCompletedAndProject_IdAndTitleContainingIgnoreCase(
-              completed,
-              projectId,
-              normalizedTitle,
-              pageable);
-
-    } else if (completed != null && projectId != null) {
-      taskPage = taskRepository.findByCompletedAndProject_Id(
-          completed,
-          projectId,
-          pageable);
-
-    } else if (completed != null && normalizedTitle != null) {
-      taskPage = taskRepository.findByCompletedAndTitleContainingIgnoreCase(
-          completed,
-          normalizedTitle,
-          pageable);
-
-    } else if (projectId != null && normalizedTitle != null) {
-      taskPage = taskRepository.findByProject_IdAndTitleContainingIgnoreCase(
-          projectId,
-          normalizedTitle,
-          pageable);
-
-    } else if (completed != null) {
-      taskPage = taskRepository.findByCompleted(
-          completed,
-          pageable);
-
-    } else if (projectId != null) {
-      taskPage = taskRepository.findByProject_Id(
-          projectId,
-          pageable);
-
-    } else if (normalizedTitle != null) {
-      taskPage = taskRepository.findByTitleContainingIgnoreCase(
-          normalizedTitle,
-          pageable);
-
-    } else {
-      taskPage = taskRepository.findAll(pageable);
-    }
-
+    Page<Task> taskPage = taskRepository.findAll(specification, pageable);
     Page<TaskResponse> responsePage = taskPage.map(TaskResponse::from);
 
     return new TaskPageResponse(
