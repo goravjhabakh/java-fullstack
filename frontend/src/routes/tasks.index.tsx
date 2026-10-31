@@ -259,9 +259,7 @@ function TasksPage() {
         ))}
       </ul>
 
-      {deleteMutation.isError && (
-        <p>Failed to delete task.</p>
-      )}
+      {deleteMutation.isError && <p>Failed to delete task.</p>}
 
       <div>
         <button

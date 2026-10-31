@@ -1,8 +1,8 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 
-import type { ApiError } from "../api/client"
+import { getApiError } from "../api/client"
 import { getTask, updateTask } from "../api/tasks"
 
 export const Route = createFileRoute("/tasks_/$taskId/edit")({
@@ -26,7 +26,46 @@ function EditTaskPage() {
   }
 
   if (taskQuery.isError) {
-    return <p>Failed to load task.</p>
+    const error = getApiError(taskQuery.error)
+
+    if (error.status === 404) {
+      return (
+        <>
+          <h2>Task not found</h2>
+          <p>The task may have been deleted.</p>
+
+          <Link
+            to="/tasks"
+            search={{
+              page: 0,
+              size: 20,
+              completed: undefined,
+              projectId: undefined,
+              title: undefined,
+              sortBy: "id",
+              direction: "asc",
+            }}
+          >
+            Back to tasks
+          </Link>
+        </>
+      )
+    }
+
+    return (
+      <>
+        <p>{error.message}</p>
+
+        <button
+          type="button"
+          onClick={() => {
+            void taskQuery.refetch()
+          }}
+        >
+          Retry
+        </button>
+      </>
+    )
   }
 
   return (
@@ -83,7 +122,9 @@ function EditTaskForm({
     onSuccess,
   })
 
-  const error = mutation.error as ApiError | null
+  const error = mutation.isError ? getApiError(mutation.error) : null
+
+  const titleError = error?.fieldErrors.title
 
   return (
     <form
@@ -95,10 +136,10 @@ function EditTaskForm({
       <div>
         <label>
           Title
-          <input value={title} onChange={(event) => setTitle(event.target.value)} />
+          <input value={title} maxLength={100} onChange={(event) => setTitle(event.target.value)} />
         </label>
 
-        {error?.fieldErrors?.title && <p>{error.fieldErrors.title}</p>}
+        {titleError && <p>{titleError}</p>}
       </div>
 
       <div>
@@ -106,13 +147,15 @@ function EditTaskForm({
           <input
             type="checkbox"
             checked={completed}
-            onChange={(event) => setCompleted(event.target.checked)}
+            onChange={(event) => {
+              setCompleted(event.target.checked)
+            }}
           />
           Completed
         </label>
       </div>
 
-      {error && !error.fieldErrors?.title && <p>{error.message}</p>}
+      {error && !titleError && <p>{error.message}</p>}
 
       <button type="submit" disabled={mutation.isPending}>
         {mutation.isPending ? "Saving..." : "Save changes"}

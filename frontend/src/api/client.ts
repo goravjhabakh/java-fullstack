@@ -6,6 +6,24 @@ export type ApiError = {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
+export function getApiError(error: unknown): ApiError {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "status" in error &&
+    "message" in error &&
+    "fieldErrors" in error
+  ) {
+    return error as ApiError
+  }
+
+  return {
+    status: 0,
+    message: "Something went wrong",
+    fieldErrors: {},
+  }
+}
+
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     const response = await fetch(`${API_BASE_URL}${path}`, {

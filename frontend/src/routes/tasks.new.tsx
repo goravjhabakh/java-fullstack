@@ -2,7 +2,7 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 
-import type { ApiError } from "../api/client"
+import { getApiError } from "../api/client"
 import { getProjects } from "../api/projects"
 import { createTask } from "../api/tasks"
 
@@ -53,9 +53,11 @@ function NewTaskPage() {
   }
 
   if (projectsQuery.isError) {
+    const error = getApiError(projectsQuery.error)
+
     return (
       <>
-        <p>Failed to load projects.</p>
+        <p>{error.message}</p>
 
         <button
           type="button"
@@ -71,9 +73,9 @@ function NewTaskPage() {
 
   const projects = projectsQuery.data
 
-  const error = createMutation.error as ApiError | null
+  const error = createMutation.isError ? getApiError(createMutation.error) : null
 
-  const titleError = error?.fieldErrors?.title
+  const titleError = error?.fieldErrors.title
 
   const canSubmit =
     projects.length > 0 &&
@@ -103,7 +105,12 @@ function NewTaskPage() {
           <div>
             <label>
               Project
-              <select value={projectId} onChange={(event) => setProjectId(event.target.value)}>
+              <select
+                value={projectId}
+                onChange={(event) => {
+                  setProjectId(event.target.value)
+                }}
+              >
                 <option value="">Select project</option>
 
                 {projects.map((project) => (
@@ -121,7 +128,9 @@ function NewTaskPage() {
               <input
                 value={title}
                 maxLength={100}
-                onChange={(event) => setTitle(event.target.value)}
+                onChange={(event) => {
+                  setTitle(event.target.value)
+                }}
               />
             </label>
 
