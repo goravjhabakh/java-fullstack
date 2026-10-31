@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "java-code-review": {
+      "source": "sivaprasadreddy/sivalabs-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/java-code-review/SKILL.md",
+      "computedHash": "544435cd14527bd04be8e9206c2698905c05cf66fba6d17f779bfc682908de5b"
+    },
+    "spring-boot-skill": {
+      "source": "sivaprasadreddy/sivalabs-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/spring-boot/SKILL.md",
+      "computedHash": "5321df82deaabfc3551cd22ea4326294b5ba2675356c3f818a67e2350131bfdc"
+    }
+  }
+}
