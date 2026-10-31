@@ -6,9 +6,9 @@ Do not design future infrastructure before it is required.
 
 ## Current architecture
 
-The application is a single Spring Boot backend that exposes an HTTP/JSON Task API and persists tasks in PostgreSQL.
+The application is a single Spring Boot backend that exposes HTTP/JSON Project and Task APIs and persists projects and tasks in PostgreSQL.
 
-The API supports task creation, retrieval, partial updates, deletion, optional filtering by completion status, and sorting by `id`, `title`, or `completed`.
+The API supports project creation and retrieval. Tasks are created under a project and continue to support retrieval, partial updates, deletion, optional filtering by completion status, and sorting by `id`, `title`, or `completed`.
 
 Current request flow:
 
@@ -33,23 +33,23 @@ The current goal is learning Spring fundamentals, not distributed systems.
 
 ### REST API
 
-The backend exposes HTTP/JSON task endpoints. Missing tasks are identified in the service layer and translated to `404 Not Found` responses by centralized exception handling.
+The backend exposes HTTP/JSON project and task endpoints. Missing projects and tasks are identified in the service layer and translated to `404 Not Found` responses by centralized exception handling.
 
-`GET /tasks` supports optional `completed`, `sortBy`, and `direction` query parameters. `GET`, `PATCH`, and `DELETE /tasks/{id}` use path variables for task IDs.
+Projects are created and read through `/projects`. Tasks are created through `POST /projects/{projectId}/tasks`. `GET /tasks` supports optional `completed`, `sortBy`, and `direction` query parameters, while `GET`, `PATCH`, and `DELETE /tasks/{id}` use task IDs.
 
 ### PostgreSQL persistence
 
-Tasks are stored in PostgreSQL rather than an in-memory Java collection.
+Projects and tasks are stored in PostgreSQL. Every task has a non-null foreign key referencing its project.
 
 Reason:
 
-Tasks must persist independently of the running application and remain available after a restart.
+Projects, tasks, and their relationship must persist independently of the running application and remain available after a restart.
 
 ### Spring Data JPA and Hibernate
 
-Spring Data JPA provides the task repository abstraction. Hibernate is the JPA implementation that maps the `Task` entity to the PostgreSQL `tasks` table and performs persistence operations.
+Spring Data JPA provides project and task repository abstractions. Hibernate maps the `Project` and `Task` entities and their one-to-many/many-to-one relationship to PostgreSQL.
 
-The repository uses inherited CRUD and sorting operations plus a derived completed-status query. Task updates and deletes are coordinated by the service layer in transactions.
+The repositories use inherited persistence operations plus a derived completed-status task query. Task creation, updates, and deletes are coordinated by the service layer in transactions. API response DTOs expose project membership without directly serializing entity relationships.
 
 ### Flyway migrations
 

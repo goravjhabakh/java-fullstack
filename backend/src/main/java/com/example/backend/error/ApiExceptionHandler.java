@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.example.backend.project.ProjectNotFoundException;
 import com.example.backend.task.TaskNotFoundException;
 
 @RestControllerAdvice
@@ -38,5 +39,11 @@ public class ApiExceptionHandler {
         400,
         exception.getMessage(),
         Map.of());
+  }
+
+  @ExceptionHandler(ProjectNotFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public ApiError handleProjectNotFound(ProjectNotFoundException exception) {
+    return new ApiError(404, exception.getMessage(), Map.of());
   }
 }

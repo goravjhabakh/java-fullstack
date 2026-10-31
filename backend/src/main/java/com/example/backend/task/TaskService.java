@@ -4,19 +4,32 @@ import java.util.List;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.transaction.Transactional;
+import com.example.backend.project.Project;
+import com.example.backend.project.ProjectNotFoundException;
+import com.example.backend.project.ProjectRepository;
 
 @Service
 public class TaskService {
 
   private final TaskRepository taskRepository;
+  private final ProjectRepository projectRepository;
 
-  public TaskService(TaskRepository taskRepository) {
+  public TaskService(
+      TaskRepository taskRepository,
+      ProjectRepository projectRepository) {
     this.taskRepository = taskRepository;
+    this.projectRepository = projectRepository;
   }
 
-  public List<Task> getAllTasks(Boolean completed, String sortBy, String direction) {
+  private Task getTaskEntityById(Long id) {
+    return taskRepository.findById(id)
+        .orElseThrow(() -> new TaskNotFoundException(id));
+  }
+
+  @Transactional(readOnly = true)
+  public List<TaskResponse> getAllTasks(Boolean completed, String sortBy, String direction) {
     String sortField = switch (sortBy) {
       case "id", "title", "completed" -> sortBy;
       default -> throw new IllegalArgumentException("Invalid sortBy value");
@@ -30,26 +43,32 @@ public class TaskService {
 
     Sort sort = Sort.by(sortDirection, sortField);
 
-    if (completed == null) {
-      return taskRepository.findAll(sort);
-    }
+    List<Task> tasks = completed == null
+        ? taskRepository.findAll(sort)
+        : taskRepository.findByCompleted(completed, sort);
 
-    return taskRepository.findByCompleted(completed, sort);
+    return tasks.stream().map(TaskResponse::from).toList();
   }
 
-  public Task getTaskById(Long id) {
-    return taskRepository.findById(id)
-        .orElseThrow(() -> new TaskNotFoundException(id));
-  }
-
-  public Task createTask(String title) {
-    Task task = new Task(title);
-    return taskRepository.save(task);
+  @Transactional(readOnly = true)
+  public TaskResponse getTaskById(Long id) {
+    return TaskResponse.from(getTaskEntityById(id));
   }
 
   @Transactional
-  public Task updateTask(Long id, UpdateTaskRequest request) {
-    Task task = getTaskById(id);
+  public TaskResponse createTask(Long projectId, String title) {
+    Project project = projectRepository.findById(projectId)
+        .orElseThrow(() -> new ProjectNotFoundException(projectId));
+
+    Task task = new Task(title, project);
+    Task savedTask = taskRepository.save(task);
+
+    return TaskResponse.from(savedTask);
+  }
+
+  @Transactional
+  public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
+    Task task = getTaskEntityById(id);
 
     if (request.getTitle() != null) {
       task.updateTitle(request.getTitle());
@@ -59,12 +78,12 @@ public class TaskService {
       task.updateCompleted(request.getCompleted());
     }
 
-    return task;
+    return TaskResponse.from(task);
   }
 
   @Transactional
   public void deleteTask(Long id) {
-    Task task = getTaskById(id);
+    Task task = getTaskEntityById(id);
     taskRepository.delete(task);
   }
 }
