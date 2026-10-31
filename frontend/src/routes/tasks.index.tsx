@@ -1,8 +1,8 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query"
-import { createFileRoute } from "@tanstack/react-router"
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { getProjects } from "../api/projects"
-import { getTasks, type TaskListParameters } from "../api/tasks"
+import { deleteTask, getTasks, type TaskListParameters } from "../api/tasks"
 import { useState } from "react"
 
 export const Route = createFileRoute("/tasks/")({
@@ -43,6 +43,7 @@ export const Route = createFileRoute("/tasks/")({
 function TasksPage() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const queryClient = useQueryClient()
 
   const [title, setTitle] = useState(search.title ?? "")
   const [completed, setCompleted] = useState(
@@ -62,6 +63,16 @@ function TasksPage() {
     sortBy: search.sortBy,
     direction: search.direction,
   }
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTask,
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ["tasks", "list"],
+      })
+    },
+  })
 
   const tasksQuery = useQuery({
     queryKey: ["tasks", "list", parameters],
@@ -105,11 +116,7 @@ function TasksPage() {
       <>
         <h2>Tasks</h2>
 
-        {hasActiveFilters ? (
-          <p>No tasks match your filters.</p>
-        ) : (
-          <p>No tasks exist yet.</p>
-        )}
+        {hasActiveFilters ? <p>No tasks match your filters.</p> : <p>No tasks exist yet.</p>}
       </>
     )
   }
@@ -229,10 +236,32 @@ function TasksPage() {
             {" — "}
             {task.completed ? "Complete" : "Incomplete"}
             {" — "}
-            {projectNames.get(task.projectId) ?? `Project ${task.projectId}`}
+            {projectNames.get(task.projectId) ?? `Project ${task.projectId}`}{" "}
+            <Link to="/tasks/$taskId/edit" params={{ taskId: String(task.id) }}>
+              Edit
+            </Link>{" "}
+            <button
+              type="button"
+              disabled={deleteMutation.isPending && deleteMutation.variables === task.id}
+              onClick={() => {
+                const confirmed = window.confirm(`Delete "${task.title}"?`)
+
+                if (confirmed) {
+                  deleteMutation.mutate(task.id)
+                }
+              }}
+            >
+              {deleteMutation.isPending && deleteMutation.variables === task.id
+                ? "Deleting..."
+                : "Delete"}
+            </button>
           </li>
         ))}
       </ul>
+
+      {deleteMutation.isError && (
+        <p>Failed to delete task.</p>
+      )}
 
       <div>
         <button

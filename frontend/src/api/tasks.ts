@@ -59,3 +59,27 @@ export function getTasks(parameters: TaskListParameters) {
 
   return apiRequest<TaskPage>(`/tasks?${searchParams.toString()}`)
 }
+
+export function getTask(taskId: number) {
+  return apiRequest<Task>(`/tasks/${taskId}`)
+}
+
+export function createTask(projectId: number, input: CreateTaskInput) {
+  return apiRequest<Task>(`/projects/${projectId}/tasks`, {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function updateTask(taskId: number, input: UpdateTaskInput) {
+  return apiRequest<Task>(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  })
+}
+
+export function deleteTask(taskId: number) {
+  return apiRequest<void>(`/tasks/${taskId}`, {
+    method: "DELETE",
+  })
+}
