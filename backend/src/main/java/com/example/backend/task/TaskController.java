@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/tasks")
 public class TaskController {
@@ -26,7 +28,7 @@ public class TaskController {
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
-  public Task createTask(@RequestBody CreateTaskRequest request) {
+  public Task createTask(@Valid @RequestBody CreateTaskRequest request) {
     return taskService.createTask(request.getTitle());
   }
 }
