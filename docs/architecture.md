@@ -6,17 +6,17 @@ Do not design future infrastructure before it is required.
 
 ## Current architecture
 
-No application architecture has been finalized yet.
+The application is a single Spring Boot backend that exposes an HTTP/JSON Task API and persists tasks in PostgreSQL.
 
-The first learning phase will begin with a single Spring Boot backend.
-
-Expected initial shape:
+Current request flow:
 
 ```mermaid
 flowchart LR
     Client --> Controller
     Controller --> Service
-    Service --> Memory[In-memory data]
+    Service --> Repository
+    Repository --> JPA[Spring Data JPA / Hibernate]
+    JPA --> PostgreSQL
 ```
 
 ## Current decisions
@@ -33,9 +33,21 @@ The current goal is learning Spring fundamentals, not distributed systems.
 
 The backend will expose HTTP/JSON endpoints.
 
-### No database initially
+### PostgreSQL persistence
 
-The first phase will use in-memory storage so Spring fundamentals can be learned before introducing JPA and PostgreSQL.
+Tasks are stored in PostgreSQL rather than an in-memory Java collection.
+
+Reason:
+
+Tasks must persist independently of the running application and remain available after a restart.
+
+### Spring Data JPA and Hibernate
+
+Spring Data JPA provides the task repository abstraction. Hibernate is the JPA implementation that maps the `Task` entity to the PostgreSQL `tasks` table and performs persistence operations.
+
+### Flyway migrations
+
+Flyway owns database schema creation and schema history through versioned SQL migrations. Hibernate validates the schema rather than creating or changing it.
 
 ## Future decisions
 
