@@ -40,4 +40,12 @@ public class Task {
   public boolean isCompleted() {
     return completed;
   }
+
+  public void updateTitle(String title) {
+    this.title = title;
+  }
+
+  public void updateCompleted(boolean completed) {
+    this.completed = completed;
+  }
 }

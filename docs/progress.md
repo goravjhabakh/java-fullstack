@@ -2,11 +2,11 @@
 
 ## Current stage
 
-Phase 3 — PostgreSQL and JPA persistence complete.
+Phase 4 — Task CRUD and querying complete.
 
 ## Active phase
 
-Phase 3 complete; ready to begin Phase 4.
+Spec 004 complete; ready to begin Spec 005.
 
 ## Completed
 
@@ -15,6 +15,8 @@ Phase 3 complete; ready to begin Phase 4.
 - Spec 001 — Spring REST Basics
 - Spec 002 — API Validation and Errors
 - Spec 003 — PostgreSQL and Spring Data JPA
+- Spec 004 — Task CRUD and Querying
+- Task CRUD operations, 404 handling, completed-status filtering, and sorting
 - OpenCode global MCP setup available:
   - Firecrawl
   - gh_grep
@@ -22,11 +24,11 @@ Phase 3 complete; ready to begin Phase 4.
 
 ## Current focus
 
-Prepare Spec 004 for the next phase of backend features.
+Prepare Spec 005 for the next backend capability.
 
 ## Next
 
-Begin Phase 4 — Real Backend Features. The next spec should introduce only the next useful backend capability, such as filtering, sorting, pagination, relationships, custom queries, configuration, or logging.
+Begin Spec 005 with the next useful backend capability.
 
 ## Notes
 
