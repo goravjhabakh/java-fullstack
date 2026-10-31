@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute('/tasks_/$taskId/edit')({
+export const Route = createFileRoute("/tasks_/$taskId/edit")({
   component: EditTaskPage,
 })
 
