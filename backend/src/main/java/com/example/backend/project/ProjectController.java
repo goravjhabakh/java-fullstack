@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.backend.auth.AppUserPrincipal;
 import com.example.backend.task.CreateTaskRequest;
 import com.example.backend.task.TaskResponse;
 import com.example.backend.task.TaskService;
@@ -32,27 +34,32 @@ public class ProjectController {
   }
 
   @GetMapping
-  public List<ProjectResponse> getAllProjects() {
-    return projectService.getAllProjects();
+  public List<ProjectResponse> getAllProjects(
+      @AuthenticationPrincipal AppUserPrincipal principal) {
+    return projectService.getAllProjects(principal.getUserId());
   }
 
   @GetMapping("/{id}")
-  public ProjectResponse getProjectById(@PathVariable Long id) {
-    return projectService.getProjectById(id);
+  public ProjectResponse getProjectById(
+      @AuthenticationPrincipal AppUserPrincipal principal,
+      @PathVariable Long id) {
+    return projectService.getProjectById(id, principal.getUserId());
   }
 
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public ProjectResponse createProject(
+      @AuthenticationPrincipal AppUserPrincipal principal,
       @Valid @RequestBody CreateProjectRequest request) {
-    return projectService.createProject(request.getName());
+    return projectService.createProject(request.getName(), principal.getUserId());
   }
 
   @PostMapping("/{projectId}/tasks")
   @ResponseStatus(HttpStatus.CREATED)
   public TaskResponse createTask(
+      @AuthenticationPrincipal AppUserPrincipal principal,
       @PathVariable Long projectId,
       @Valid @RequestBody CreateTaskRequest request) {
-    return taskService.createTask(projectId, request.getTitle());
+    return taskService.createTask(projectId, request.getTitle(), principal.getUserId());
   }
 }

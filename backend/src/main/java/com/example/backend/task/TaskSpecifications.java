@@ -7,6 +7,12 @@ public final class TaskSpecifications {
   private TaskSpecifications() {
   }
 
+  public static Specification<Task> belongsToUser(Long userId) {
+    return (root, query, criteriaBuilder) -> criteriaBuilder.equal(
+        root.get("project").get("user").get("id"),
+        userId);
+  }
+
   public static Specification<Task> hasCompleted(Boolean completed) {
     return (root, query, criteriaBuilder) -> {
       if (completed == null) {

@@ -25,8 +25,8 @@ public class TaskService {
     this.projectRepository = projectRepository;
   }
 
-  private Task getTaskEntityById(Long id) {
-    return taskRepository.findById(id)
+  private Task getTaskEntityById(Long id, Long userId) {
+    return taskRepository.findByIdAndProjectUserId(id, userId)
         .orElseThrow(() -> new TaskNotFoundException(id));
   }
 
@@ -38,7 +38,8 @@ public class TaskService {
       Long projectId,
       String title,
       String sortBy,
-      String direction) {
+      String direction,
+      Long userId) {
 
     if (page < 0) {
       throw new IllegalArgumentException("Page must be 0 or greater");
@@ -79,7 +80,8 @@ public class TaskService {
       sort = sort.and(Sort.by(Sort.Direction.ASC, Task::getId));
     }
 
-    Specification<Task> specification = TaskSpecifications.hasCompleted(completed)
+    Specification<Task> specification = TaskSpecifications.belongsToUser(userId)
+        .and(TaskSpecifications.hasCompleted(completed))
         .and(TaskSpecifications.hasProjectId(projectId))
         .and(TaskSpecifications.titleContains(normalizedTitle));
 
@@ -99,13 +101,13 @@ public class TaskService {
   }
 
   @Transactional(readOnly = true)
-  public TaskResponse getTaskById(Long id) {
-    return TaskResponse.from(getTaskEntityById(id));
+  public TaskResponse getTaskById(Long id, Long userId) {
+    return TaskResponse.from(getTaskEntityById(id, userId));
   }
 
   @Transactional
-  public TaskResponse createTask(Long projectId, String title) {
-    Project project = projectRepository.findById(projectId)
+  public TaskResponse createTask(Long projectId, String title, Long userId) {
+    Project project = projectRepository.findByIdAndUserId(projectId, userId)
         .orElseThrow(() -> new ProjectNotFoundException(projectId));
 
     Task task = new Task(title, project);
@@ -115,8 +117,12 @@ public class TaskService {
   }
 
   @Transactional
-  public TaskResponse updateTask(Long id, UpdateTaskRequest request) {
-    Task task = getTaskEntityById(id);
+  public TaskResponse updateTask(
+      Long id,
+      UpdateTaskRequest request,
+      Long userId) {
+
+    Task task = getTaskEntityById(id, userId);
 
     if (request.getTitle() != null) {
       task.updateTitle(request.getTitle());
@@ -130,8 +136,8 @@ public class TaskService {
   }
 
   @Transactional
-  public void deleteTask(Long id) {
-    Task task = getTaskEntityById(id);
+  public void deleteTask(Long id, Long userId) {
+    Task task = getTaskEntityById(id, userId);
     taskRepository.delete(task);
   }
 }
