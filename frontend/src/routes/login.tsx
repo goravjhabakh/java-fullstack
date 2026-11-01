@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, Link, Navigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
 import { authQueryOptions, login } from "../api/auth"
 import { getApiError } from "../api/client"
@@ -15,13 +15,16 @@ function LoginPage() {
 
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [hasSubmitted, setHasSubmitted] = useState(false)
+  const usernameInput = useRef<HTMLInputElement>(null)
+  const passwordInput = useRef<HTMLInputElement>(null)
 
   const authQuery = useQuery(authQueryOptions)
 
   const loginMutation = useMutation({
     mutationFn: () =>
       login({
-        username,
+        username: username.trim(),
         password,
       }),
 
@@ -69,7 +72,8 @@ function LoginPage() {
 
   const error = loginMutation.isError ? getApiError(loginMutation.error) : null
 
-  const canSubmit = username.trim() !== "" && password !== "" && !loginMutation.isPending
+  const usernameError = hasSubmitted && username.trim() === "" ? "Username is required." : null
+  const passwordError = hasSubmitted && password === "" ? "Password is required." : null
 
   return (
     <div className="mx-auto max-w-md">
@@ -84,10 +88,19 @@ function LoginPage() {
           className="mt-6 space-y-5"
           onSubmit={(event) => {
             event.preventDefault()
+            setHasSubmitted(true)
 
-            if (canSubmit) {
-              loginMutation.mutate()
+            if (username.trim() === "") {
+              usernameInput.current?.focus()
+              return
             }
+
+            if (password === "") {
+              passwordInput.current?.focus()
+              return
+            }
+
+            loginMutation.mutate()
           }}
         >
           <div>
@@ -97,12 +110,21 @@ function LoginPage() {
 
             <input
               autoComplete="username"
+              aria-describedby={usernameError ? "login-username-error" : undefined}
+              aria-invalid={Boolean(usernameError)}
               className="field-control"
               id="username"
               name="username"
               onChange={(event) => setUsername(event.target.value)}
+              ref={usernameInput}
+              spellCheck={false}
               value={username}
             />
+            {usernameError && (
+              <p className="mt-2 text-sm text-red-700" id="login-username-error" role="alert">
+                {usernameError}
+              </p>
+            )}
           </div>
 
           <div>
@@ -112,13 +134,21 @@ function LoginPage() {
 
             <input
               autoComplete="current-password"
+              aria-describedby={passwordError ? "login-password-error" : undefined}
+              aria-invalid={Boolean(passwordError)}
               className="field-control"
               id="password"
               name="password"
               onChange={(event) => setPassword(event.target.value)}
+              ref={passwordInput}
               type="password"
               value={password}
             />
+            {passwordError && (
+              <p className="mt-2 text-sm text-red-700" id="login-password-error" role="alert">
+                {passwordError}
+              </p>
+            )}
           </div>
 
           {error && (
@@ -130,7 +160,11 @@ function LoginPage() {
             </p>
           )}
 
-          <button className="button-primary w-full" disabled={!canSubmit} type="submit">
+          <button
+            className="button-primary w-full"
+            disabled={loginMutation.isPending}
+            type="submit"
+          >
             {loginMutation.isPending ? "Logging in…" : "Login"}
           </button>
         </form>

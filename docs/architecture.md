@@ -1,20 +1,15 @@
 # Architecture
 
-This document records architecture decisions as the project grows.
-
-Do not design future infrastructure before it is required.
+This document records architecture decisions as the project grows. Do not design future infrastructure before it is required.
 
 ## Current architecture
 
-The application consists of a React + TypeScript frontend and a Spring Boot backend. The frontend consumes the backend's HTTP/JSON Project and Task APIs; the backend persists projects and tasks in PostgreSQL.
-
-The API supports project creation and retrieval. Tasks are created under a project and support retrieval, partial updates, deletion, paginated listing, filtering by completion status and project, simple title search, and sorting by `id`, `title`, or `completed`.
-
-Current request flow:
+The application is a React + TypeScript frontend and a Spring Boot monolith backed by PostgreSQL. The frontend consumes HTTP/JSON authentication, project, and task APIs. A project belongs to one user and every task belongs to one project.
 
 ```mermaid
 flowchart LR
-    Client[React frontend] -->|HTTP/JSON| Controller
+    Browser[React frontend] -->|credentialed HTTP/JSON + CSRF header| Security[Spring Security filter chain]
+    Security --> Controller
     Controller --> Service
     Service --> Repository
     Repository --> JPA[Spring Data JPA / Hibernate]
@@ -25,46 +20,46 @@ flowchart LR
 
 ### Monolith first
 
-Start with a single Spring Boot application.
+The application remains a single Spring Boot application. The goal is learning Spring fundamentals and production-style application boundaries, not distributed systems.
 
-Reason:
+### REST API and persistence
 
-The current goal is learning Spring fundamentals, not distributed systems.
+The backend exposes HTTP/JSON endpoints for authentication, projects, and tasks. Tasks support creation under a project, retrieval, partial update, deletion, paginated listing, completion/project/title filtering, and sorting by `id`, `title`, or `completed`.
 
-### REST API
+PostgreSQL stores `app_users`, projects, and tasks. The ownership relationship is:
 
-The backend exposes HTTP/JSON project and task endpoints. Missing projects and tasks are identified in the service layer and translated to `404 Not Found` responses by centralized exception handling.
+```text
+app_users 1 ---- * projects 1 ---- * tasks
+```
 
-Projects are created and read through `/projects`. Tasks are created through `POST /projects/{projectId}/tasks`. `GET /tasks` returns a paginated response and supports `page`, `size`, `completed`, `projectId`, `title`, `sortBy`, and `direction` query parameters. `GET`, `PATCH`, and `DELETE /tasks/{id}` use task IDs.
+Flyway owns versioned schema creation and history; Hibernate validates rather than changes the schema. Spring Data JPA repositories and service-layer transactions coordinate persistence. Task-list Specifications compose the mandatory owner predicate with existing filters, sorting, and pagination.
 
-### React frontend
+### Session authentication and authorization
 
-The frontend is a separate Vite application using React and TypeScript. TanStack Router handles client-side routing and task-list URL state. TanStack Query handles server state, including task/project requests, mutations, cache invalidation, loading, error, and retry behavior.
+Spring Security uses server-side HTTP sessions with an HttpOnly session cookie, not JWTs. Spring Security authenticates `POST /auth/login`, persists the `SecurityContext` in the session, and invalidates the session on `POST /auth/logout`. Passwords are BCrypt hashes; raw passwords, session identifiers, and tokens are not stored in browser storage.
 
-The frontend supports task listing, filtering, pagination, creation, editing, and deletion through the existing REST API.
+`/auth/register` creates a normalized unique user and an owned Default Project in one transaction. `GET /auth/me` returns only the authenticated user's safe identity. Registration, login, and logout use API-friendly responses rather than HTML redirects.
 
-### CORS
+All project and task endpoints require authentication. Controllers obtain `AppUserPrincipal` through `@AuthenticationPrincipal` and pass its stable user ID to services. Repository queries and task Specifications scope reads and writes to that owner. Tasks derive ownership from `task.project.user`; they do not have a duplicate user column. Requests for another user's project or task return `404 Not Found` to avoid revealing its existence.
 
-Spring MVC centrally configures CORS for the local Vite frontend origin on the task and project API paths, allowing the frontend to make browser requests to the backend during development.
+### CSRF and credentialed CORS
 
-### PostgreSQL persistence
+CSRF protection remains enabled because browsers automatically send the session cookie. `GET /auth/csrf` supplies the current CSRF token and header name. The frontend sends that header for every unsafe request, including registration, login, logout, and project/task mutations, and refreshes CSRF state around authentication changes.
 
-Projects and tasks are stored in PostgreSQL. Every task has a non-null foreign key referencing its project.
+Centralized CORS allows only `http://localhost:5173`, enables credentials, and allows the required methods plus `Content-Type` and `X-CSRF-TOKEN`. Spring Security enables CORS so preflight requests are processed before authentication. CORS limits trusted browser origins; it does not replace authentication, authorization, or CSRF protection.
 
-Reason:
+### React frontend and auth state
 
-Projects, tasks, and their relationship must persist independently of the running application and remain available after a restart.
+The separate Vite application uses React, TypeScript, TanStack Router, and TanStack Query. Typed API modules own all HTTP requests. The shared API client uses `credentials: "include"`, attaches the current CSRF header to unsafe requests, and normalizes API errors.
 
-### Spring Data JPA and Hibernate
+`GET /auth/me` is represented by one TanStack Query key, `['auth', 'me']`; there is no independent client-side authentication boolean. The task route waits for that query, renders a deliberate loading state, and redirects anonymous users to `/login`. The shared shell renders the authenticated username and logout action.
 
-Spring Data JPA provides project and task repository abstractions. Hibernate maps the `Project` and `Task` entities and their one-to-many/many-to-one relationship to PostgreSQL.
+On logout, and on any protected API `401`, the frontend removes task and project queries and sets the current-user query to anonymous. This prevents one user's cached data from appearing to the next user. Session persistence is confirmed by loading `/auth/me` after a browser refresh.
 
-The repositories use inherited persistence operations and task listing uses Spring Data JPA Specifications for composable completion-status, project, and title filters. Task creation, updates, and deletes are coordinated by the service layer in transactions. API response DTOs expose project membership without directly serializing entity relationships.
+### Test strategy
 
-### Flyway migrations
-
-Flyway owns database schema creation and schema history through versioned SQL migrations. Hibernate validates the schema rather than creating or changing it.
+Backend integration tests use PostgreSQL Testcontainers with Spring Boot `@ServiceConnection`, so the authentication and ownership flows run against PostgreSQL rather than an in-memory substitute. Focused tests cover password hashing/default-project creation, anonymous access, CSRF rejection, authenticated access, cross-owner isolation, and session invalidation after logout.
 
 ## Future decisions
 
-Add architecture decisions here only when they are actually introduced.
+Add decisions only when a real requirement introduces them, such as deployment configuration, observability, CI, caching, or background work.

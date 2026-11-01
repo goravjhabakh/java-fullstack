@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. Do not implement until this specification is approved.
+Completed.
 
 ## Goal
 

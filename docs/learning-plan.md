@@ -106,7 +106,7 @@ A complete issue-tracking web application.
 
 ---
 
-## Phase 6 — Authentication and Security
+## Phase 6 — Authentication and Security (Complete)
 
 Learn:
 
@@ -114,10 +114,12 @@ Learn:
 - authentication
 - authorization
 - password handling
-- roles and permissions
-- JWT or session-based authentication
+- session-based Spring Security authentication
+- ownership authorization
+- BCrypt password handling
+- CSRF and credentialed CORS
 
-Add authentication to the existing application.
+Add session authentication and user-owned data boundaries to the existing application.
 
 ---
 
@@ -133,8 +135,7 @@ Introduce when useful:
 - metrics
 - structured logging
 - CI/CD
-- integration testing
-- Testcontainers
+- broader integration testing strategy
 
 ---
 

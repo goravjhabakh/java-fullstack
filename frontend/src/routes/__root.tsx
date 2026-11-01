@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { createRootRoute, Link, Outlet, useNavigate } from "@tanstack/react-router"
 import { authQueryOptions, logout } from "../api/auth"
+import { getApiError } from "../api/client"
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -31,6 +32,8 @@ function RootComponent() {
     },
   })
 
+  const logoutError = logoutMutation.isError ? getApiError(logoutMutation.error) : null
+
   return (
     <div className="min-h-screen bg-slate-50">
       <a
@@ -58,9 +61,13 @@ function RootComponent() {
           </Link>
           <nav
             aria-label="Primary navigation"
-            className="flex items-center gap-2 text-sm font-medium"
+            className="flex flex-wrap items-center justify-end gap-2 text-sm font-medium"
           >
-            {authQuery.data ? (
+            {authQuery.isPending ? (
+              <span aria-live="polite" className="px-2 text-sm text-slate-600" role="status">
+                Checking session…
+              </span>
+            ) : authQuery.data ? (
               <>
                 <Link
                   activeProps={{
@@ -85,7 +92,12 @@ function RootComponent() {
                   New Task
                 </Link>
 
-                <span className="px-2 text-slate-600">{authQuery.data.username}</span>
+                <span
+                  className="max-w-32 truncate px-2 text-slate-600"
+                  title={authQuery.data.username}
+                >
+                  {authQuery.data.username}
+                </span>
 
                 <button
                   className="button-secondary"
@@ -119,6 +131,14 @@ function RootComponent() {
         id="main-content"
         tabIndex={-1}
       >
+        {logoutError && (
+          <div
+            className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            role="alert"
+          >
+            Unable to log out. {logoutError.message}
+          </div>
+        )}
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createRouter, RouterProvider } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
@@ -7,7 +7,29 @@ import { routeTree } from "./routeTree.gen"
 import "./styles.css"
 import { refreshCsrf } from "./api/auth"
 
-const queryClient = new QueryClient({
+let queryClient: QueryClient
+
+function clearAuthenticatedData() {
+  queryClient.removeQueries({ queryKey: ["tasks"] })
+  queryClient.removeQueries({ queryKey: ["projects"] })
+  queryClient.setQueryData(["auth", "me"], null)
+}
+
+queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error) => {
+      if (getApiError(error).status === 401) {
+        clearAuthenticatedData()
+      }
+    },
+  }),
+  mutationCache: new MutationCache({
+    onError: (error) => {
+      if (getApiError(error).status === 401) {
+        clearAuthenticatedData()
+      }
+    },
+  }),
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {

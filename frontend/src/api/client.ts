@@ -40,6 +40,18 @@ export function getApiError(error: unknown): ApiError {
   }
 }
 
+function fallbackErrorMessage(status: number) {
+  if (status === 401) {
+    return "Your session has expired. Please sign in again."
+  }
+
+  if (status === 403) {
+    return "The security check failed. Refresh the page and try again."
+  }
+
+  return "Request failed"
+}
+
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   try {
     const method = options?.method?.toUpperCase() ?? "GET"
@@ -68,7 +80,7 @@ export async function apiRequest<T>(path: string, options?: RequestInit): Promis
       } catch {
         error = {
           status: response.status,
-          message: "Request failed",
+          message: fallbackErrorMessage(response.status),
           fieldErrors: {},
         }
       }
