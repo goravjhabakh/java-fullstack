@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.example.backend.auth.UsernameAlreadyExistsException;
 import com.example.backend.project.ProjectNotFoundException;
 import com.example.backend.task.TaskNotFoundException;
 
@@ -45,5 +46,16 @@ public class ApiExceptionHandler {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ApiError handleProjectNotFound(ProjectNotFoundException exception) {
     return new ApiError(404, exception.getMessage(), Map.of());
+  }
+
+  @ExceptionHandler(UsernameAlreadyExistsException.class)
+  @ResponseStatus(HttpStatus.CONFLICT)
+  public ApiError handleUsernameAlreadyExists(
+      UsernameAlreadyExistsException exception) {
+
+    return new ApiError(
+        409,
+        exception.getMessage(),
+        Map.of());
   }
 }

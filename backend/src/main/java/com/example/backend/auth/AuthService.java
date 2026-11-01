@@ -2,6 +2,7 @@ package com.example.backend.auth;
 
 import java.util.Locale;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,13 +33,19 @@ public class AuthService {
     String normalizedUsername = username.trim().toLowerCase(Locale.ROOT);
 
     if (userRepository.existsByUsername(normalizedUsername)) {
-      throw new IllegalArgumentException("Username already exists");
+      throw new UsernameAlreadyExistsException();
     }
 
     String passwordHash = passwordEncoder.encode(password);
 
     User user = new User(normalizedUsername, passwordHash);
-    User savedUser = userRepository.save(user);
+    User savedUser;
+
+    try {
+      savedUser = userRepository.saveAndFlush(user);
+    } catch (DataIntegrityViolationException exception) {
+      throw new UsernameAlreadyExistsException();
+    }
 
     Project defaultProject = new Project("Default Project", savedUser);
     projectRepository.save(defaultProject);

@@ -1,5 +1,7 @@
 package com.example.backend.auth;
 
+import java.util.Locale;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,7 +21,9 @@ public class AppUserDetailsService implements UserDetailsService {
 
   @Override
   public UserDetails loadUserByUsername(String username) {
-    User user = userRepository.findByUsername(username)
+    String normalizedUsername = username.trim().toLowerCase(Locale.ROOT);
+
+    User user = userRepository.findByUsername(normalizedUsername)
         .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
     return new AppUserPrincipal(user);

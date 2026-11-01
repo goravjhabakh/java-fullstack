@@ -9,14 +9,10 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Override
   public void addCorsMappings(CorsRegistry registry) {
-    registry.addMapping("/tasks/**")
+    registry.addMapping("/**")
         .allowedOrigins("http://localhost:5173")
         .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
-        .allowedHeaders("Content-Type");
-
-    registry.addMapping("/projects/**")
-        .allowedOrigins("http://localhost:5173")
-        .allowedMethods("GET", "POST", "PATCH", "DELETE", "OPTIONS")
-        .allowedHeaders("Content-Type");
+        .allowedHeaders("Content-Type", "X-CSRF-TOKEN")
+        .allowCredentials(true);
   }
 }

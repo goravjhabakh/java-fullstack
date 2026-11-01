@@ -1,6 +1,7 @@
 package com.example.backend.auth;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,5 +35,12 @@ public class AuthController {
     return authService.register(
         request.getUsername(),
         request.getPassword());
+  }
+
+  @GetMapping("/me")
+  public AuthUserResponse me(@AuthenticationPrincipal AppUserPrincipal principal) {
+    return new AuthUserResponse(
+        principal.getUserId(),
+        principal.getUsername());
   }
 }

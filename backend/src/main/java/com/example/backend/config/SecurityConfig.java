@@ -19,11 +19,25 @@ public class SecurityConfig {
     http
         .authorizeHttpRequests(auth -> auth
             .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-            .requestMatchers("/auth/**").permitAll()
-            .requestMatchers("/projects/**", "/tasks/**").authenticated()
+            .requestMatchers("/auth/register", "/auth/login", "/auth/csrf").permitAll()
+            .requestMatchers("/auth/me", "/projects/**", "/tasks/**").authenticated()
             .anyRequest().authenticated())
-        .formLogin(form -> form.disable())
+        .formLogin(form -> form
+            .loginProcessingUrl("/auth/login")
+            .successHandler((request, response, authentication) -> {
+              response.setStatus(HttpStatus.NO_CONTENT.value());
+            })
+            .failureHandler((request, response, authentication) -> {
+              response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            }))
+        .logout(logout -> logout
+            .logoutUrl("/auth/logout")
+            .logoutSuccessHandler((request, response, authentication) -> {
+              response.setStatus(HttpStatus.NO_CONTENT.value());
+            }))
         .httpBasic(basic -> basic.disable())
+        .cors(cors -> {
+        })
         .exceptionHandling(exceptions -> exceptions
             .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)));
 
