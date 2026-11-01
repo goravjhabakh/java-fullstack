@@ -1,10 +1,36 @@
-import { createRootRoute, Link, Outlet } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createRootRoute, Link, Outlet, useNavigate } from "@tanstack/react-router"
+import { authQueryOptions, logout } from "../api/auth"
 
 export const Route = createRootRoute({
   component: RootComponent,
 })
 
 function RootComponent() {
+  const authQuery = useQuery(authQueryOptions)
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+
+  const logoutMutation = useMutation({
+    mutationFn: logout,
+
+    onSuccess: async () => {
+      queryClient.removeQueries({
+        queryKey: ["tasks"],
+      })
+
+      queryClient.removeQueries({
+        queryKey: ["projects"],
+      })
+
+      queryClient.setQueryData(authQueryOptions.queryKey, null)
+
+      await navigate({
+        to: "/login",
+      })
+    },
+  })
+
   return (
     <div className="min-h-screen bg-slate-50">
       <a
@@ -32,31 +58,58 @@ function RootComponent() {
           </Link>
           <nav
             aria-label="Primary navigation"
-            className="flex items-center gap-1 text-sm font-medium"
+            className="flex items-center gap-2 text-sm font-medium"
           >
-            <Link
-              activeProps={{ className: "bg-slate-100 text-ink-950" }}
-              className="rounded-md px-3 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-100"
-              to={"/tasks"}
-              search={{
-                page: 0,
-                size: 20,
-                completed: undefined,
-                projectId: undefined,
-                title: undefined,
-                sortBy: "id",
-                direction: "asc",
-              }}
-            >
-              Tasks
-            </Link>
-            <Link
-              activeProps={{ className: "bg-brand-700" }}
-              className="rounded-md bg-brand-600 px-3 py-2 text-white transition-colors hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-100"
-              to="/tasks/new"
-            >
-              New Task
-            </Link>
+            {authQuery.data ? (
+              <>
+                <Link
+                  activeProps={{
+                    className: "bg-slate-100 text-ink-950",
+                  }}
+                  className="rounded-md px-3 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                  to="/tasks"
+                  search={{
+                    page: 0,
+                    size: 20,
+                    completed: undefined,
+                    projectId: undefined,
+                    title: undefined,
+                    sortBy: "id",
+                    direction: "asc",
+                  }}
+                >
+                  Tasks
+                </Link>
+
+                <Link className="button-primary" to="/tasks/new">
+                  New Task
+                </Link>
+
+                <span className="px-2 text-slate-600">{authQuery.data.username}</span>
+
+                <button
+                  className="button-secondary"
+                  disabled={logoutMutation.isPending}
+                  onClick={() => logoutMutation.mutate()}
+                  type="button"
+                >
+                  {logoutMutation.isPending ? "Logging out…" : "Logout"}
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  className="rounded-md px-3 py-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950"
+                  to="/login"
+                >
+                  Login
+                </Link>
+
+                <Link className="button-primary" to="/register">
+                  Register
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>

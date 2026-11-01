@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client"
 import { getApiError } from "./api/client"
 import { routeTree } from "./routeTree.gen"
 import "./styles.css"
+import { refreshCsrf } from "./api/auth"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,8 @@ const rootElement = document.getElementById("root")
 if (!rootElement) {
   throw new Error("Root element not found")
 }
+
+void refreshCsrf()
 
 createRoot(rootElement).render(
   <StrictMode>

@@ -1,3 +1,8 @@
 .playwright-mcp
 .vscode/settings
 .agents/skills
+
+# Environment
+.env
+.env.local
+!.env.example

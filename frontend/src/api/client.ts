@@ -4,10 +4,22 @@ export type ApiError = {
   fieldErrors: Record<string, string>
 }
 
+type CsrfToken = {
+  token: string
+  headerName: string
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 if (!API_BASE_URL) {
   throw new Error("VITE_API_BASE_URL must be configured")
+}
+
+let csrfToken: CsrfToken | null = null
+const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"])
+
+export function setCsrfToken(token: CsrfToken | null) {
+  csrfToken = token
 }
 
 export function getApiError(error: unknown): ApiError {
@@ -30,12 +42,22 @@ export function getApiError(error: unknown): ApiError {
 
 export async function apiRequest<T>(path: string, options?: RequestInit): Promise<T> {
   try {
+    const method = options?.method?.toUpperCase() ?? "GET"
+    const headers = new Headers(options?.headers)
+
+    if (options?.body && typeof options.body === "string" && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json")
+    }
+
+    if (unsafeMethods.has(method) && csrfToken) {
+      headers.set(csrfToken.headerName, csrfToken.token)
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
-      headers: {
-        ...(options?.body ? { "Content-Type": "application/json" } : {}),
-        ...options?.headers,
-      },
+      method,
+      credentials: "include",
+      headers,
     })
 
     if (!response.ok) {
